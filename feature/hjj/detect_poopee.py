@@ -99,22 +99,31 @@ def main():
                     box_color = [int(j) for j in np.random.randint(0,255, 3)] # random color for new object
                     box_colors[obj.label_id] = box_color
 
-                """
-                True --> calculate the coordinates and accuracy of all objects
-                obj.label_id == 17 --> calculate the coordinates and accuracy of the dog object
-                """
-                if obj.label_id == 17:
-                    coordinate = tuple(map(int, obj.bounding_box.ravel()))
-                    accuracy = int(obj.score * 100) 
-                    label_text = labels[obj.label_id] + " (" + str(accuracy) + "%)"
-                    """draws the bounding box and label"""
-                    annotate_objects(frame, coordinate, label_text, accuracy, box_color)
+                coordinate = tuple(map(int, obj.bounding_box.ravel()))
+                accuracy = int(obj.score * 100) 
+                label_text = labels[obj.label_id] + " (" + str(accuracy) + "%)"
+                """draws the bounding box and label"""
+                annotate_objects(frame, coordinate, label_text, accuracy, box_color)
 
-        """resize the image to 224*224"""
+                if obj.label_id == 17: # id 17 is dog
+                    """resize the image to 224*224"""
+                    coordinate = obj.bounding_box.ravel()
+                    y = coordinate[3] - coordinate[1]
+                    x = coordinate[2] - coordinate[0]
+                    if x >= y:
+                        gap = (x - y)/2
+                        coordinate[1] -= gap
+                        coordinate[3] += gap
+                    else:
+                        gap = (y - x)/2
+                        coordinate[0] -= gap
+                        coordinate[2] += gap
+                    coordinate = tuple(map(int, coordinate))
+                    img = img.crop(coordinate).resize((224, 224))
 
-        """infer poopee"""
+                    """infer poopee"""
 
-        """send a signal to the snack bar if the dog defecates on the pad"""
+                    """send a signal to the snack bar if the dog defecates on the pad"""
 
         """calculating and drawing fps"""            
         currTime = time.time()
