@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import time
 from PIL import Image
+from edgetpu.detection.engine import DetectionEngine
 from tflite_runtime.interpreter import Interpreter
 from tflite_runtime.interpreter import load_delegate
 # from bluetooth import *
@@ -15,42 +16,42 @@ def load_labels(path):
             labels[int(id)] = name
     return labels
 
-def set_interpreter(model_path):
-    interpreter = Interpreter(model_path, experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-    interpreter.allocate_tensors()
-    return interpreter
+# def set_interpreter(model_path):
+#     interpreter = Interpreter(model_path, experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
+#     interpreter.allocate_tensors()
+#     return interpreter
 
-def set_input_tensor(interpreter, image):
-    """sets the input tensor"""
-    tensor_index = interpreter.get_input_details()[0]['index']
-    input_tensor = interpreter.tensor(tensor_index)()[0]
-    input_tensor[:, :] = image
+# def set_input_tensor(interpreter, image):
+#     """sets the input tensor"""
+#     tensor_index = interpreter.get_input_details()[0]['index']
+#     input_tensor = interpreter.tensor(tensor_index)()[0]
+#     input_tensor[:, :] = image
 
-def get_output_tensor(interpreter, index):
-    """returns the output tensor at the given index"""
-    output_details = interpreter.get_output_details()[index]
-    tensor = np.squeeze(interpreter.get_tensor(output_details['index']))
-    return tensor
+# def get_output_tensor(interpreter, index):
+#     """returns the output tensor at the given index"""
+#     output_details = interpreter.get_output_details()[index]
+#     tensor = np.squeeze(interpreter.get_tensor(output_details['index']))
+#     return tensor
 
-def detect_object(interpreter, image, threshold):
-    set_input_tensor(interpreter, image)
-    interpreter.invoke()
+# def detect_object(interpreter, image, threshold):
+#     set_input_tensor(interpreter, image)
+#     interpreter.invoke()
 
-    boxes = get_output_tensor(interpreter, 0)
-    classes = get_output_tensor(interpreter, 1)
-    scores = get_output_tensor(interpreter, 2)
-    count = int(get_output_tensor(interpreter, 3))
+#     boxes = get_output_tensor(interpreter, 0)
+#     classes = get_output_tensor(interpreter, 1)
+#     scores = get_output_tensor(interpreter, 2)
+#     count = int(get_output_tensor(interpreter, 3))
 
-    results = []
-    for i in range(count):
-        if scores[i] >= threshold:
-            result = {
-                'bounding_box': boxes[i],
-                'class_id': classes[i],
-                'score': scores[i]
-            }
-            results.append(result)
-    return results
+#     results = []
+#     for i in range(count):
+#         if scores[i] >= threshold:
+#             result = {
+#                 'bounding_box': boxes[i],
+#                 'class_id': classes[i],
+#                 'score': scores[i]
+#             }
+#             results.append(result)
+#     return results
 
 def infer_poopee():
     print('infer poopee')
@@ -63,6 +64,9 @@ def main():
     model_path_for_poopee = 'poopee_edgetpu.tflite'
     threshold = 0.4
     prevTime = 0
+    engine = DetectionEngine(model_path_for_object)
+
+    box_colors = {}
 
     """load labels"""
     labels = load_labels(label_path)
@@ -78,11 +82,28 @@ def main():
         img = Image.fromarray(img) # NumPy ndarray to PIL.Image
 
         """detect object"""
-        interpreter = set_interpreter(model_path_for_object)
-        _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
-        img = img.resize((input_height, input_width)) # resize the image to 300*300
-        results = detect_object(interpreter, img, threshold)
-        print(results)
+        candidates = engine.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
+        if candidates:
+            for obj in candidates:
+                if obj.label_id in box_colors:
+                    box_color = box_colors[obj.label_id] # the same color for the same object
+                else :
+                    box_color = [int(j) for j in np.random.randint(0,255, 3)] # random color for new object
+                    box_colors[obj.label_id] = box_color
+
+                # drawing bounding-box
+                box_left, box_top, box_right, box_bottom = tuple(map(int, obj.bounding_box.ravel()))
+                print(box_left, box_top, box_right, box_bottom, obj.bounding_box.ravel())
+                cv2.rectangle(frame, (box_left, box_top), (box_right, box_bottom), box_color, 2)
+
+                # drawing label box
+                accuracy = int(obj.score * 100)
+                label_text = labels[obj.label_id] + " (" + str(accuracy) + "%)" 
+                (txt_w, txt_h), base = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_PLAIN, 2, 3)
+                cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
+                cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
+
+                print(label_text)
 
         """infer poopee"""
 
