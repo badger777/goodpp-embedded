@@ -53,6 +53,14 @@ def load_labels(path):
 #             results.append(result)
 #     return results
 
+def annotate_objects(frame, coordinate, label_text, accuracy, box_color):
+    box_left, box_top, box_right, box_bottom = coordinate
+
+    cv2.rectangle(frame, (box_left, box_top), (box_right, box_bottom), box_color, 2)
+    (txt_w, txt_h), base = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_PLAIN, 2, 3)
+    cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
+    cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
+
 def infer_poopee():
     print('infer poopee')
 
@@ -63,10 +71,9 @@ def main():
     model_path_for_object = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     model_path_for_poopee = 'poopee_edgetpu.tflite'
     threshold = 0.4
-    prevTime = 0
     engine = DetectionEngine(model_path_for_object)
-
-    box_colors = {}
+    prevTime = 0 # initializing for calculating fps
+    box_colors = {} # initializing for setting color
 
     """load labels"""
     labels = load_labels(label_path)
@@ -85,25 +92,25 @@ def main():
         candidates = engine.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
         if candidates:
             for obj in candidates:
+                """set color for drawing"""
                 if obj.label_id in box_colors:
                     box_color = box_colors[obj.label_id] # the same color for the same object
-                else :
+                else:
                     box_color = [int(j) for j in np.random.randint(0,255, 3)] # random color for new object
                     box_colors[obj.label_id] = box_color
 
-                # drawing bounding-box
-                box_left, box_top, box_right, box_bottom = tuple(map(int, obj.bounding_box.ravel()))
-                print(box_left, box_top, box_right, box_bottom, obj.bounding_box.ravel())
-                cv2.rectangle(frame, (box_left, box_top), (box_right, box_bottom), box_color, 2)
+                """
+                True --> calculate the coordinates and accuracy of all objects
+                obj.label_id == 17 --> calculate the coordinates and accuracy of the dog object
+                """
+                if obj.label_id == 17:
+                    coordinate = tuple(map(int, obj.bounding_box.ravel()))
+                    accuracy = int(obj.score * 100) 
+                    label_text = labels[obj.label_id] + " (" + str(accuracy) + "%)"
+                    """draws the bounding box and label"""
+                    annotate_objects(frame, coordinate, label_text, accuracy, box_color)
 
-                # drawing label box
-                accuracy = int(obj.score * 100)
-                label_text = labels[obj.label_id] + " (" + str(accuracy) + "%)" 
-                (txt_w, txt_h), base = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_PLAIN, 2, 3)
-                cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
-                cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
-
-                print(label_text)
+        """resize the image to 224*224"""
 
         """infer poopee"""
 
@@ -118,7 +125,7 @@ def main():
         """show video"""
         cv2.imshow('goodpp', frame)
         if cv2.waitKey(1)&0xFF == ord('q'):
-            break 
+            break # press q to break
     cap.release()
 
 if __name__ == '__main__':
