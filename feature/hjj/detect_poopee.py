@@ -44,14 +44,20 @@ def crop_image(image, coordinate):
 
 def main():
     """set variables"""
-    video_number = 0
+    video_number = 2
     label_path = 'coco_labels.txt'
     model_path_for_object = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     model_path_for_poopee = 'poopee_edgetpu.tflite'
     threshold = 0.4
+    # mac_address = '' # initializing for bluetooth connection
     prevTime = 0 # initializing for calculating fps
     box_colors = {} # initializing for setting color
     # setting pad coordinate
+
+    """connect bluetooth"""
+    # client_socket = BluetoothSocket(RFCOMM)
+    # client_socket.connect((mac_address, 1))
+    # print("bluetooth connected!")
 
     """load labels for detect object"""
     labels = load_labels(label_path)
@@ -87,11 +93,16 @@ def main():
                 accuracy = int(obj.score * 100) 
                 label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
                 """draws the bounding box and label"""
-                annotate_objects(frame, coordinate, label_text, accuracy, box_color)
+                # annotate_objects(frame, coordinate, label_text, accuracy, box_color)
 
                 if obj.label_id == 17: # id 17 is dog
                     """crop the image"""
                     input_data = crop_image(img, obj.bounding_box.ravel())
+
+                    """predict poopee"""
+                    classify = engine_for_predict.classify_with_image(input_data, top_k=1)
+                    result = classify[0][0]
+                    accuracy = classify[0][1] * 100
 
                     """
                     predict poopee
@@ -99,10 +110,6 @@ def main():
                     1 --> nothing
                     2 --> pee
                     """
-                    classify = engine_for_predict.classify_with_image(input_data, top_k=1)
-                    result = classify[0][0]
-                    accuracy = classify[0][1] * 100
-
                     print("dog's coordinate is", coordinate, end=' ')
                     if result == 0:
                         print('and dog poop', end=' ')
@@ -114,19 +121,27 @@ def main():
 
                     """send a signal to the snack bar if the dog defecates on the pad"""
                     # compare the dog's coordinates with the set pad's coordinates
+                    # if the dog defecates on the pad:
+                    #     client_socket.send("on")
 
         """calculating and drawing fps"""            
         currTime = time.time()
         fps = 1/ (currTime -  prevTime)
         prevTime = currTime
         print('fps is', fps)
-        cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
+        # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
         """show video"""
-        cv2.imshow('goodpp', frame)
-        if cv2.waitKey(1)&0xFF == ord('q'):
-            break # press q to break
+        # cv2.imshow('goodpp', frame)
+        # if cv2.waitKey(1)&0xFF == ord('q'):
+        #     break # press q to break
+    
+    """release video"""
     cap.release()
+
+    """disconnect bluetooth"""
+    # client_socket.close()
+    # print("bluetooth disconnected!")
 
 if __name__ == '__main__':
     main()
