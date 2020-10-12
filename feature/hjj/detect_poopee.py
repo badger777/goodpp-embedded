@@ -127,10 +127,7 @@ def main():
 
                     #Get output
                     output_data = interpreter.get_tensor(output_details[0]['index'])
-                    result.append(output_data)
-
-                    res = np.reshape(result, -1)
-                    result = np.argmax(res)
+                    result = np.argmax(output_data)
 
                     print("dog's coordinate is", coordinate, end=' ')
                     if result == 0:
@@ -147,7 +144,7 @@ def main():
         currTime = time.time()
         fps = 1/ (currTime -  prevTime)
         prevTime = currTime
-        # print(fps)
+        # print('fps is', fps)
         cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
         """show video"""
