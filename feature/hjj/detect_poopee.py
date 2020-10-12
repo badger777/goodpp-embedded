@@ -3,8 +3,7 @@ import cv2
 import time
 from PIL import Image
 from edgetpu.detection.engine import DetectionEngine
-from tflite_runtime.interpreter import Interpreter
-from tflite_runtime.interpreter import load_delegate
+from edgetpu.classification.engine import ClassificationEngine
 # from bluetooth import *
 
 """load labels"""
@@ -26,7 +25,7 @@ def annotate_objects(frame, coordinate, label_text, accuracy, box_color):
     cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
     cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
 
-"""crop the image to 224*224 and return numpy array"""
+"""crop the image to 224*224 and return"""
 def crop_image(image, coordinate):
     y = coordinate[3] - coordinate[1]
     x = coordinate[2] - coordinate[0]
@@ -41,23 +40,7 @@ def crop_image(image, coordinate):
 
     coordinate = tuple(map(int, coordinate))
     image = image.crop(coordinate).resize((224, 224))
-    image = np.expand_dims(np.uint8(image), 0)
     return image
-
-# def set_input_tensor(interpreter, image):
-#     """sets the input tensor"""
-#     tensor_index = interpreter.get_input_details()[0]['index']
-#     input_tensor = interpreter.tensor(tensor_index)()[0]
-#     input_tensor[:, :] = image
-
-# def get_output_tensor(interpreter, index):
-#     """returns the output tensor at the given index"""
-#     output_details = interpreter.get_output_details()[index]
-#     tensor = np.squeeze(interpreter.get_tensor(output_details['index']))
-#     return tensor
-
-# def predict_poopee(interpreter, img):
-#     print('predict poopee')
 
 def main():
     """set variables"""
@@ -74,11 +57,10 @@ def main():
     labels = load_labels(label_path)
 
     """load engine for detect object"""
-    engine = DetectionEngine(model_path_for_object)
+    engine_for_object = DetectionEngine(model_path_for_object)
 
-    """set interpreter for predict poopee"""
-    interpreter = Interpreter(model_path_for_poopee, experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-    interpreter.allocate_tensors()
+    """load engine for predict poopee"""
+    engine_for_predict = ClassificationEngine(model_path_for_poopee)
 
     """load video"""
     cap = cv2.VideoCapture(video_number)
@@ -91,7 +73,7 @@ def main():
         img = Image.fromarray(img) # NumPy ndarray to PIL.Image
 
         """detect object"""
-        candidates = engine.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
+        candidates = engine_for_object.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
         if candidates:
             for obj in candidates:
                 """set color for drawing"""
@@ -117,25 +99,18 @@ def main():
                     1 --> nothing
                     2 --> pee
                     """
-                    # Get input and output tensors
-                    input_details = interpreter.get_input_details()
-                    output_details = interpreter.get_output_details()
-
-                    #input 전달
-                    interpreter.set_tensor(input_details[0]['index'], input_data)
-                    interpreter.invoke()
-
-                    #Get output
-                    output_data = interpreter.get_tensor(output_details[0]['index'])
-                    result = np.argmax(output_data)
+                    classify = engine_for_predict.classify_with_image(input_data, top_k=1)
+                    result = classify[0][0]
+                    accuracy = classify[0][1] * 100
 
                     print("dog's coordinate is", coordinate, end=' ')
                     if result == 0:
-                        print('and dog poop')
+                        print('and dog poop', end=' ')
                     elif result == 2:
-                        print('and dog pees')
+                        print('and dog pees', end=' ')
                     else:
-                        print('')
+                        print('and dog is nothing', end=' ')
+                    print('with', accuracy, 'percent accuracy.')
 
                     """send a signal to the snack bar if the dog defecates on the pad"""
                     # compare the dog's coordinates with the set pad's coordinates
@@ -144,7 +119,7 @@ def main():
         currTime = time.time()
         fps = 1/ (currTime -  prevTime)
         prevTime = currTime
-        # print('fps is', fps)
+        print('fps is', fps)
         cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
         """show video"""
