@@ -7,6 +7,7 @@ from tflite_runtime.interpreter import Interpreter
 from tflite_runtime.interpreter import load_delegate
 # from bluetooth import *
 
+"""load labels"""
 def load_labels(path):
     with open(path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -16,10 +17,32 @@ def load_labels(path):
             labels[int(id)] = name
     return labels
 
-# def set_interpreter(model_path):
-#     interpreter = Interpreter(model_path, experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
-#     interpreter.allocate_tensors()
-#     return interpreter
+"""draws the bounding box and label"""
+def annotate_objects(frame, coordinate, label_text, accuracy, box_color):
+    box_left, box_top, box_right, box_bottom = coordinate
+
+    cv2.rectangle(frame, (box_left, box_top), (box_right, box_bottom), box_color, 2)
+    (txt_w, txt_h), base = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_PLAIN, 2, 3)
+    cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
+    cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
+
+"""crop the image to 224*224 and return numpy array"""
+def crop_image(image, coordinate):
+    y = coordinate[3] - coordinate[1]
+    x = coordinate[2] - coordinate[0]
+    if x >= y:
+        gap = (x - y)/2.0
+        coordinate[1] -= gap
+        coordinate[3] += gap
+    else:
+        gap = (y - x)/2.0
+        coordinate[0] -= gap
+        coordinate[2] += gap
+
+    coordinate = tuple(map(int, coordinate))
+    image = image.crop(coordinate).resize((224, 224))
+    image = np.expand_dims(np.uint8(image), 0)
+    return image
 
 # def set_input_tensor(interpreter, image):
 #     """sets the input tensor"""
@@ -33,36 +56,8 @@ def load_labels(path):
 #     tensor = np.squeeze(interpreter.get_tensor(output_details['index']))
 #     return tensor
 
-# def detect_object(interpreter, image, threshold):
-#     set_input_tensor(interpreter, image)
-#     interpreter.invoke()
-
-#     boxes = get_output_tensor(interpreter, 0)
-#     classes = get_output_tensor(interpreter, 1)
-#     scores = get_output_tensor(interpreter, 2)
-#     count = int(get_output_tensor(interpreter, 3))
-
-#     results = []
-#     for i in range(count):
-#         if scores[i] >= threshold:
-#             result = {
-#                 'bounding_box': boxes[i],
-#                 'class_id': classes[i],
-#                 'score': scores[i]
-#             }
-#             results.append(result)
-#     return results
-
-def annotate_objects(frame, coordinate, label_text, accuracy, box_color):
-    box_left, box_top, box_right, box_bottom = coordinate
-
-    cv2.rectangle(frame, (box_left, box_top), (box_right, box_bottom), box_color, 2)
-    (txt_w, txt_h), base = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_PLAIN, 2, 3)
-    cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
-    cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
-
-def infer_poopee():
-    print('infer poopee')
+# def predict_poopee(interpreter, img):
+#     print('predict poopee')
 
 def main():
     """set variables"""
@@ -71,19 +66,26 @@ def main():
     model_path_for_object = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     model_path_for_poopee = 'poopee_edgetpu.tflite'
     threshold = 0.4
-    engine = DetectionEngine(model_path_for_object)
     prevTime = 0 # initializing for calculating fps
     box_colors = {} # initializing for setting color
+    # setting pad coordinate
 
-    """load labels"""
+    """load labels for detect object"""
     labels = load_labels(label_path)
+
+    """load engine for detect object"""
+    engine = DetectionEngine(model_path_for_object)
+
+    """set interpreter for predict poopee"""
+    interpreter = Interpreter(model_path_for_poopee, experimental_delegates=[load_delegate('libedgetpu.so.1.0')])
+    interpreter.allocate_tensors()
 
     """load video"""
     cap = cv2.VideoCapture(video_number)
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("cannot read frame.")
+            print('cannot read frame')
             break
         img = frame[:, :, ::-1].copy() # BGR to RGB
         img = Image.fromarray(img) # NumPy ndarray to PIL.Image
@@ -101,34 +103,51 @@ def main():
 
                 coordinate = tuple(map(int, obj.bounding_box.ravel()))
                 accuracy = int(obj.score * 100) 
-                label_text = labels[obj.label_id] + " (" + str(accuracy) + "%)"
+                label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
                 """draws the bounding box and label"""
                 annotate_objects(frame, coordinate, label_text, accuracy, box_color)
 
                 if obj.label_id == 17: # id 17 is dog
-                    """resize the image to 224*224"""
-                    coordinate = obj.bounding_box.ravel()
-                    y = coordinate[3] - coordinate[1]
-                    x = coordinate[2] - coordinate[0]
-                    if x >= y:
-                        gap = (x - y)/2
-                        coordinate[1] -= gap
-                        coordinate[3] += gap
-                    else:
-                        gap = (y - x)/2
-                        coordinate[0] -= gap
-                        coordinate[2] += gap
-                    coordinate = tuple(map(int, coordinate))
-                    img = img.crop(coordinate).resize((224, 224))
+                    """crop the image"""
+                    input_data = crop_image(img, obj.bounding_box.ravel())
 
-                    """infer poopee"""
+                    """
+                    predict poopee
+                    0 --> poo
+                    1 --> nothing
+                    2 --> pee
+                    """
+                    # Get input and output tensors
+                    input_details = interpreter.get_input_details()
+                    output_details = interpreter.get_output_details()
+
+                    #input 전달
+                    interpreter.set_tensor(input_details[0]['index'], input_data)
+                    interpreter.invoke()
+
+                    #Get output
+                    output_data = interpreter.get_tensor(output_details[0]['index'])
+                    result.append(output_data)
+
+                    res = np.reshape(result, -1)
+                    result = np.argmax(res)
+
+                    print("dog's coordinate is", coordinate, end=' ')
+                    if result == 0:
+                        print('and dog poop')
+                    elif result == 2:
+                        print('and dog pees')
+                    else:
+                        print('')
 
                     """send a signal to the snack bar if the dog defecates on the pad"""
+                    # compare the dog's coordinates with the set pad's coordinates
 
         """calculating and drawing fps"""            
         currTime = time.time()
         fps = 1/ (currTime -  prevTime)
         prevTime = currTime
+        # print(fps)
         cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
         """show video"""
