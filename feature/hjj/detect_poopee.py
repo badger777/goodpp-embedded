@@ -107,13 +107,13 @@ def main():
                     """
                     predict poopee
                     0 --> poo
-                    1 --> nothing
-                    2 --> pee
+                    1 --> pee
+                    2 --> nothing
                     """
                     print("dog's coordinate is", coordinate, end=' ')
                     if result == 0:
                         print('and dog poop', end=' ')
-                    elif result == 2:
+                    elif result == 1:
                         print('and dog pees', end=' ')
                     else:
                         print('and dog is nothing', end=' ')
