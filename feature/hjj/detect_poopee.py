@@ -1,6 +1,9 @@
 import numpy as np
 import cv2
 import time
+import json
+import os
+from poopee_requests import Poopee
 from PIL import Image
 from edgetpu.detection.engine import DetectionEngine
 from edgetpu.classification.engine import ClassificationEngine
@@ -42,6 +45,23 @@ def crop_image(image, coordinate):
     image = image.crop(coordinate).resize((224, 224))
     return image
 
+"""read a json file when 'poopee_polling.py' file does not write a json file"""
+def read_json(file_path):
+    while True:
+        try:
+            with open(file_path, 'r') as json_file:
+                json_data = json.load(json_file)
+                return json_data
+        except:
+            print('A json file is being written.')
+
+"""record the success of the dog's bowel movements to server"""
+def send_result(poopee, image, pet_id, token):
+    image.save('dog_image.jpg')
+    response = poopee.pet_record(pet_id, token)
+    os.remove('dog_image.jpg')
+    return response
+
 def main():
     """set variables"""
     video_number = 2
@@ -52,7 +72,25 @@ def main():
     # mac_address = '' # initializing for bluetooth connection
     prevTime = 0 # initializing for calculating fps
     box_colors = {} # initializing for setting color
-    # setting pad coordinate
+    json_path = 'poopee_data.json'
+    
+    """set variables to initialize class"""
+    json_data = read_json(json_path)
+    serial_num, user_id, ip_addr = json_data['serial_num'], json_data['user_id'], json_data['ip_addr']
+    # print(serial_num, user_id, ip_addr)
+
+    """load class"""
+    poopee = Poopee(user_id, serial_num, ip_addr)
+
+    """log in ppcam"""
+    response = poopee.ppcam_login()
+    if str(type(response)) == "<class 'dict'>":
+        token = response['device_access_token']
+        ppcam_id = response['ppcam_id']
+        pet_id = response['pet_id']
+        # print(token, ppcam_id, pet_id)
+    else:
+        return response # if login fails, the program is terminate
 
     """connect bluetooth"""
     # client_socket = BluetoothSocket(RFCOMM)
@@ -97,10 +135,10 @@ def main():
 
                 if obj.label_id == 17: # id 17 is dog
                     """crop the image"""
-                    input_data = crop_image(img, obj.bounding_box.ravel())
+                    dog_image = crop_image(img, obj.bounding_box.ravel())
 
                     """predict poopee"""
-                    classify = engine_for_predict.classify_with_image(input_data, top_k=1)
+                    classify = engine_for_predict.classify_with_image(dog_image, top_k=1)
                     result = classify[0][0]
                     accuracy = classify[0][1] * 100
 
@@ -120,8 +158,13 @@ def main():
                     print('with', accuracy, 'percent accuracy.')
 
                     """send a signal to the snack bar if the dog defecates on the pad"""
-                    # compare the dog's coordinates with the set pad's coordinates
+                    temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
+                    dog_coordinate = dict(zip(temp_key, temp_value))
+                    json_data = read_json(json_path)
+                    pad_coordinate, feedback = json_data['pad'], json_data['feedback']
+                    # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
                     # if the dog defecates on the pad:
+                    #     send_result(poopee, dog_image, pet_id, token)
                     #     client_socket.send("on")
 
         """calculating and drawing fps"""            

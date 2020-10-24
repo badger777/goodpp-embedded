@@ -47,10 +47,10 @@ class Poopee:
             print('Poopee cam is registered!')
     
     """
-    save the success or failure of the dog's bowel movements
+    record the success of the dog's bowel movements
     POST at /{pet_id}/record
     """
-    def pet_record(self, pet_id, result, image, token):
+    def pet_record(self, pet_id, token):
         """modify URL"""
         temp_url = self._url + 'pet/' + str(pet_id) + '/record'
 
@@ -59,7 +59,7 @@ class Poopee:
         timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
         temp_data = {
             'timestamp': timestamp,
-            'result': result
+            'result': 'SUCCESS'
         }
 
         """add access token at headers"""
@@ -69,7 +69,7 @@ class Poopee:
 
         """prepare to send an image"""
         temp_file = [
-            ('image', open(image,'rb'))
+            ('image', open('dog_image.jpg','rb'))
         ]
 
         """http request"""
