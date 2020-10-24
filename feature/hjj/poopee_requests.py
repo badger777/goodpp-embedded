@@ -22,10 +22,11 @@ def _ppcam_register(url, ip_addr, serial_num, user_id, headers):
     return response.status_code # return type 'int'
 
 class Poopee:
-    def __init__(self, user_id, serial_num, ip_addr):
+    def __init__(self, user_id, serial_num, ip_addr, image_name):
         self._user_id = user_id
         self._serial_num = serial_num
         self._ip_addr = ip_addr
+        self._image_name = image_name
         self._url = 'https://dev.goodpoopee.com/'
         self._headers = {
             'Content-Type': 'application/json',
@@ -69,7 +70,7 @@ class Poopee:
 
         """prepare to send an image"""
         temp_file = [
-            ('image', open('dog_image.jpg','rb'))
+            ('image', open(self._image_name,'rb'))
         ]
 
         """http request"""

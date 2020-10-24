@@ -2,6 +2,7 @@
     "serial_num": "",
     "user_id": 0,
     "ip_addr": "",
+    "image_name": "dog_image.jpg",
     "pad": {
         "ldx": 0,
         "ldy": 0,

@@ -56,8 +56,8 @@ def read_json(file_path):
             print('A json file is being written.')
 
 """record the success of the dog's bowel movements to server"""
-def send_result(poopee, image, pet_id, token):
-    image.save('dog_image.jpg')
+def send_result(poopee, image, pet_id, token, image_name):
+    image.save(image_name)
 
     response = poopee.pet_record(pet_id, token)
     """
@@ -69,7 +69,7 @@ def send_result(poopee, image, pet_id, token):
         token = response['device_access_token']
         response = poopee.pet_record(pet_id, token)
 
-    os.remove('dog_image.jpg')
+    os.remove(image_name)
     return response, token
 
 def main():
@@ -86,11 +86,11 @@ def main():
     
     """set variables to initialize class"""
     json_data = read_json(json_path)
-    serial_num, user_id, ip_addr = json_data['serial_num'], json_data['user_id'], json_data['ip_addr']
-    # print(serial_num, user_id, ip_addr)
+    serial_num, user_id, ip_addr, image_name = json_data['serial_num'], json_data['user_id'], json_data['ip_addr'], json_data['image_name']
+    # print(serial_num, user_id, ip_addr, image_name)
 
     """load class"""
-    poopee = Poopee(user_id, serial_num, ip_addr)
+    poopee = Poopee(user_id, serial_num, ip_addr, image_name)
 
     """log in ppcam"""
     response = poopee.ppcam_login()
@@ -174,7 +174,7 @@ def main():
                     pad_coordinate, feedback = json_data['pad'], json_data['feedback']
                     # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
                     # if the dog defecates on the pad:
-                    #     response, token = send_result(poopee, dog_image, pet_id, token)
+                    #     response, token = send_result(poopee, dog_image, pet_id, token, image_name)
                     #     client_socket.send("on")
 
         """calculating and drawing fps"""            

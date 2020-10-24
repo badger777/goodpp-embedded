@@ -17,11 +17,11 @@ def main():
 
     """set variables to initialize class"""
     json_data = read_json(file_path)
-    serial_num, user_id, ip_addr = json_data['serial_num'], json_data['user_id'], json_data['ip_addr']
-    # print(serial_num, user_id, ip_addr)
+    serial_num, user_id, ip_addr, image_name = json_data['serial_num'], json_data['user_id'], json_data['ip_addr'], json_data['image_name']
+    # print(serial_num, user_id, ip_addr, image_name)
 
     """load class"""
-    poopee = Poopee(user_id, serial_num, ip_addr)
+    poopee = Poopee(user_id, serial_num, ip_addr, image_name)
 
     """log in ppcam"""
     response = poopee.ppcam_login()
