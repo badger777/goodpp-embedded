@@ -3,10 +3,30 @@ import json
 import datetime
 from PIL import Image
 
+"""
+register poopee cam for log in
+POST at /register
+"""
+def _ppcam_register(url, ip_addr, serial_num, user_id, headers):
+    """modify URL"""
+    temp_url = url + 'ppcam/register'
+    
+    """create data"""
+    temp_data = {
+        'ip_address': ip_addr,
+        'serial_num': serial_num,
+        'user_id': user_id
+    }
+
+    """https requests"""
+    response = requests.post(temp_url, headers=headers, data=json.dumps(temp_data))
+    return response.status_code
+
 class Poopee:
-    def __init__(self, user_id, serial_num):
+    def __init__(self, user_id, serial_num, ip_addr):
         self._user_id = user_id
         self._serial_num = serial_num
+        self._ip_addr = ip_addr
         self._url = 'https://dev.goodpoopee.com/'
         self._headers = {
             'Content-Type': 'application/json',
@@ -59,34 +79,21 @@ class Poopee:
 
         """https requests"""
         response = requests.post(temp_url, headers=self._headers, data=json.dumps(temp_data))
+        
+        if response.status_code == 404: # if ppcam is not registered, register ppcam and log in again
+            response = _ppcam_register(self._url, self._ip_addr, self._serial_num, self._user_id, self._headers)
+            if response.status_code == 200:
+                response = requests.post(temp_url, headers=self._headers, data=json.dumps(temp_data))
+            else:
+                print("Register failed!: " + response.text.encode('utf8'))
+                return response.status_code 
+
         if response.status_code == 200:
             response = response.json()
-            temp_response = {}
-            temp_response['token'] = response['device_access_token']
-            temp_response['ppcam_id'] = response['ppcam_id']
-            temp_response['pet_id'] = response['pet_id']
-            return temp_response
+            return response
         else:
+            print("Log in failed!: " + response.text.encode('utf8'))
             return response.status_code
-
-    """
-    register poopee cam for log in
-    POST at /register
-    """
-    def ppcam_register(self, ip_addr):
-        """modify URL"""
-        temp_url = self._url + 'ppcam/register'
-        
-        """create data"""
-        temp_data = {
-            'ip_address': ip_addr,
-            'serial_num': self._serial_num,
-            'user_id': self._user_id
-        }
-
-        """https requests"""
-        response = requests.post(temp_url, headers=self._headers, data=json.dumps(temp_data))
-        return response
     
     """
     polling at the server for connect
@@ -105,11 +112,14 @@ class Poopee:
         response = requests.get(temp_url, headers=temp_headers)
         if response.status_code == 200:
             response = response.json()
-            if 'feeding' in response:
-                print('feeding')
             if 'pad' in response:
-                print('coordinates')
+                del response['pad']['id']
+                del response['pad']['ppcam_id']
+                del response['pad']['user_id']
             if 'ppsnack' in response:
-                print('feedback')
+                response['feedback'] = response['ppsnack']['feedback']
+                del response['ppsnack']
+            return response
         else:
+            print("Polling failed!: " + response.text.encode('utf8'))
             return response.status_code
