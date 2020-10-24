@@ -36,6 +36,16 @@ def main():
     """polling every 3 seconds"""
     while True:
         response = poopee.ppcam_polling(ppcam_id, token)
+        
+        """
+        when the token expires(http 401), the token is reissued
+        this code brings security issues, so we will need to fix the code later
+        """
+        if response == 401:
+           response = poopee.ppcam_login()
+           token = response['device_access_token']
+           response = poopee.ppcam_polling(ppcam_id, token)
+        
         # print(response)
         if str(type(response)) == "<class 'dict'>": 
             """give snacks as much as requested by the user"""
@@ -55,6 +65,7 @@ def main():
                 write_json(file_path, json_data)
         else:
             return response # if polling fails, the program is terminated
+        
         sleep(3)
 
 if __name__ == '__main__':
