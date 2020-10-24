@@ -112,10 +112,19 @@ class Poopee:
         response = requests.get(temp_url, headers=temp_headers)
         if response.status_code == 200:
             response = response.json()
+            if 'feeding' in response:
+                response['feeding'] = int(response['feeding'])
             if 'pad' in response:
-                del response['pad']['id']
-                del response['pad']['ppcam_id']
-                del response['pad']['user_id']
+                response['pad'] = {
+                    'ldx': response['pad']['ldx'],
+                    'ldy': response['pad']['ldy'],
+                    'lux': response['pad']['lux'],
+                    'luy': response['pad']['luy'],
+                    'rdx': response['pad']['rdx'],
+                    'rdy': response['pad']['rdy'],
+                    'rux': response['pad']['rux'],
+                    'ruy': response['pad']['ruy']   
+                }
             if 'ppsnack' in response:
                 response['feedback'] = response['ppsnack']['feedback']
                 del response['ppsnack']
