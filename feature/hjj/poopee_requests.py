@@ -39,7 +39,7 @@ class Poopee:
             data=json.dumps({'serial_num': self._serial_num})
         )
         temp_code = temp_response.status_code
-        """if ppcam is not registered(http 404), register ppcam"""
+        """if ppcam is not registered(http 404), try to register ppcam until ppcam is registered"""
         if temp_code == 404:
             while temp_code != 200:
                 print('Try to register poopee cam...')
