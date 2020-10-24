@@ -58,9 +58,19 @@ def read_json(file_path):
 """record the success of the dog's bowel movements to server"""
 def send_result(poopee, image, pet_id, token):
     image.save('dog_image.jpg')
+
     response = poopee.pet_record(pet_id, token)
+    """
+    when the token expires(http 401), the token is reissued
+    this code brings security issues, so we will need to fix the code later
+    """
+    if response == 401:
+        response = poopee.ppcam_login()
+        token = response['device_access_token']
+        response = poopee.pet_record(pet_id, token)
+
     os.remove('dog_image.jpg')
-    return response
+    return response, token
 
 def main():
     """set variables"""
@@ -164,7 +174,7 @@ def main():
                     pad_coordinate, feedback = json_data['pad'], json_data['feedback']
                     # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
                     # if the dog defecates on the pad:
-                    #     send_result(poopee, dog_image, pet_id, token)
+                    #     response, token = send_result(poopee, dog_image, pet_id, token)
                     #     client_socket.send("on")
 
         """calculating and drawing fps"""            
