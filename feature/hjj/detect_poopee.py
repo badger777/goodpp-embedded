@@ -28,6 +28,22 @@ def annotate_objects(frame, coordinate, label_text, accuracy, box_color):
     cv2.rectangle(frame, (box_left - 1, box_top - txt_h), (box_left + txt_w, box_top + txt_h), box_color, -1)
     cv2.putText(frame, label_text, (box_left, box_top+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
 
+"""draws the bounding box and label for the pad"""
+def annotate_pad(frame, coordinate, box_color):
+    points = np.array([
+        [coordinate['lux'], coordinate['luy']],
+        [coordinate['rux'], coordinate['ruy']],
+        [coordinate['rdx'], coordinate['rdy']],
+        [coordinate['ldx'], coordinate['ldy']]
+    ], np.int32)
+    label_text = 'pad'
+    
+    cv2.polylines(frame, [points], True, box_color, 2)
+    (txt_w, txt_h), base = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_PLAIN, 2, 3)
+    cv2.rectangle(frame, (coordinate['lux'] - 1, coordinate['luy'] - txt_h), (coordinate['lux'] + txt_w, coordinate['luy'] + txt_h), box_color, -1)
+    cv2.putText(frame, label_text, (coordinate['lux'], coordinate['luy']+base), cv2.FONT_HERSHEY_PLAIN, 2, (255,255,255), 2)
+
+
 """crop the image to 224*224 and return"""
 def crop_image(image, coordinate):
     y = coordinate[3] - coordinate[1]
@@ -85,12 +101,15 @@ def main():
     # mac_address = '' # initializing for bluetooth connection
     prevTime = 0 # initializing for calculating fps
     box_colors = {} # initializing for setting color
+    pad_coordinate = {}
     json_path = 'poopee_data.json'
     
     """set variables to initialize class"""
     json_data = read_json(json_path)
     serial_num, user_id, ip_addr, image_name = json_data['serial_num'], json_data['user_id'], json_data['ip_addr'], json_data['image_name']
-    # print(serial_num, user_id, ip_addr, image_name)
+
+    """set variables to draw the bounding box and label for the pad"""
+    # pad_color = [int(j) for j in np.random.randint(0,255, 3)] 
 
     """load class"""
     poopee = Poopee(user_id, serial_num, ip_addr, image_name)
@@ -128,6 +147,11 @@ def main():
             break
         img = frame[:, :, ::-1].copy() # BGR to RGB
         img = Image.fromarray(img) # NumPy ndarray to PIL.Image
+
+        """draw the bounding box and label for the pad"""
+        # json_data = read_json(json_path)
+        # pad_coordinate = json_data['pad']
+        # annotate_pad(frame, pad_coordinate, pad_color)
 
         """detect object"""
         candidates = engine_for_object.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
