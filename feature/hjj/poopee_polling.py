@@ -5,11 +5,13 @@ from poopee_requests import Poopee
 def read_json(file_path):
     with open(file_path, 'r') as json_file:
         json_data = json.load(json_file)
+        print('Success to read a json file!')
         return json_data
 
 def write_json(file_path, json_data):
     with open(file_path, 'w') as json_file:
         json.dump(json_data, json_file, indent=4)
+        print('Success to write a json file!')
 
 def main():
     """set json file path"""

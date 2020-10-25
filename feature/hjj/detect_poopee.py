@@ -67,9 +67,10 @@ def read_json(file_path):
         try:
             with open(file_path, 'r') as json_file:
                 json_data = json.load(json_file)
+                print('Success to read a json file!')
                 return json_data
         except:
-            print('A json file is being written.')
+            print('Fail to read json file!')
 
 """record the success of the dog's bowel movements to server"""
 def send_result(poopee, image, pet_id, token, image_name):
