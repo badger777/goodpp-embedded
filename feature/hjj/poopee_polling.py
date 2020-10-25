@@ -27,7 +27,7 @@ def main():
     if str(type(response)) == "<class 'dict'>":
         token = response['device_access_token']
         ppcam_id = response['ppcam_id']
-        pet_id = response['pet_id']
+        # pet_id = response['pet_id']
     else:
         return response # if login fails, the program is terminated
 
@@ -47,7 +47,7 @@ def main():
         if str(type(response)) == "<class 'dict'>": 
             """give snacks as much as requested by the user"""
             if 'feeding' in response:
-                for i in range(response['feeding']):
+                for _ in range(response['feeding']):
                     print('feeding') # 간식 주기
                     sleep(1)
             """update pad data in json file"""
