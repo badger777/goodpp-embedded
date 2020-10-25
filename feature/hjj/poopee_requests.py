@@ -46,6 +46,7 @@ class Poopee:
                 print('Try to register poopee cam...')
                 temp_code = _ppcam_register(self._url, self._ip_addr, self._serial_num, self._user_id, self._headers)
             print('Poopee cam is registered!')
+        print('Poopee class is initialized!')
     
     """
     record the success of the dog's bowel movements
@@ -75,8 +76,10 @@ class Poopee:
 
         """http request"""
         response = requests.request('POST', temp_url, headers=temp_headers, data=temp_data, files=temp_file)
-        if response.status_code != 200:
-            print("Recording failed!: " + response.text.encode('utf8'))
+        if response.status_code == 200:
+            print('Recording success!')
+        else:
+            print('Recording failed!: ' + response.text.encode('utf8'))
         return response.status_code # return type 'int' 
 
     """
@@ -96,9 +99,10 @@ class Poopee:
         response = requests.post(temp_url, headers=self._headers, data=json.dumps(temp_data))
         if response.status_code == 200:
             response = response.json()
+            print('Log in success!')
             return response # return type 'dict'
         else:
-            print("Log in failed!: " + response.text.encode('utf8'))
+            print('Log in failed!: ' + response.text.encode('utf8'))
             return response.status_code # return type 'int'
     
     """
@@ -110,7 +114,7 @@ class Poopee:
         temp_url = self._url + 'ppcam/' + str(ppcam_id) + '/polling'
 
         """add access token at headers"""
-        auth = "Bearer " + token
+        auth = 'Bearer ' + token
         temp_headers = self._headers
         temp_headers['Authorization'] = auth
 
@@ -134,7 +138,8 @@ class Poopee:
             if 'ppsnack' in response:
                 response['feedback'] = response['ppsnack']['feedback']
                 del response['ppsnack']
+            print('Polling success!')
             return response # return type 'dict'
         else:
-            print("Polling failed!: " + response.text.encode('utf8'))
+            print('Polling failed!: ' + response.text.encode('utf8'))
             return response.status_code # return type 'int'
