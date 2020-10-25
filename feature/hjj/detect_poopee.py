@@ -69,7 +69,10 @@ def send_result(poopee, image, pet_id, token, image_name):
         token = response['device_access_token']
         response = poopee.pet_record(pet_id, token)
 
-    os.remove(image_name)
+    try:
+        os.remove(image_name)
+    except:
+        print('Failed to delete image!')
     return response, token
 
 def main():
