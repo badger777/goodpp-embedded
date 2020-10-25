@@ -20,7 +20,7 @@ def load_labels(path):
     return labels
 
 """draws the bounding box and label"""
-def annotate_objects(frame, coordinate, label_text, accuracy, box_color):
+def annotate_objects(frame, coordinate, label_text, box_color):
     box_left, box_top, box_right, box_bottom = coordinate
 
     cv2.rectangle(frame, (box_left, box_top), (box_right, box_bottom), box_color, 2)
@@ -169,7 +169,7 @@ def main():
                 accuracy = int(obj.score * 100) 
                 label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
                 """draws the bounding box and label"""
-                # annotate_objects(frame, coordinate, label_text, accuracy, box_color)
+                # annotate_objects(frame, coordinate, label_text, box_color)
 
                 if obj.label_id == 17: # id 17 is dog
                     """crop the image"""
