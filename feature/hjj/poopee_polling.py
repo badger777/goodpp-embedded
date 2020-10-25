@@ -18,7 +18,6 @@ def main():
     """set variables to initialize class"""
     json_data = read_json(file_path)
     serial_num, user_id, ip_addr, image_name = json_data['serial_num'], json_data['user_id'], json_data['ip_addr'], json_data['image_name']
-    # print(serial_num, user_id, ip_addr, image_name)
 
     """load class"""
     poopee = Poopee(user_id, serial_num, ip_addr, image_name)
@@ -29,7 +28,6 @@ def main():
         token = response['device_access_token']
         ppcam_id = response['ppcam_id']
         pet_id = response['pet_id']
-        # print(token, ppcam_id, pet_id)
     else:
         return response # if login fails, the program is terminated
 
@@ -46,7 +44,6 @@ def main():
            token = response['device_access_token']
            response = poopee.ppcam_polling(ppcam_id, token)
         
-        # print(response)
         if str(type(response)) == "<class 'dict'>": 
             """give snacks as much as requested by the user"""
             if 'feeding' in response:
@@ -58,11 +55,13 @@ def main():
                 json_data = read_json(file_path)
                 json_data['pad'] = response['pad']
                 write_json(file_path, json_data)
+                print('Update pad data!')
             """update feedback data in json file"""
             if 'feedback' in response:
                 json_data = read_json(file_path)
                 json_data['feedback'] = response['feedback']
                 write_json(file_path, json_data)
+                print('Update feedback data!') 
         else:
             return response # if polling fails, the program is terminated
         
