@@ -1,0 +1,17 @@
+{
+    "serial_num": "",
+    "user_id": 0,
+    "ip_addr": "",
+    "image_name": "dog_image.jpg",
+    "pad": {
+        "ldx": 0,
+        "ldy": 0,
+        "lux": 0,
+        "luy": 0,
+        "rdx": 0,
+        "rdy": 0,
+        "rux": 0,
+        "ruy": 0
+    },
+    "feedback": 0.5
+}
