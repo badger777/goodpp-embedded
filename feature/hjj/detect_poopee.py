@@ -196,10 +196,35 @@ def main():
                     print('with', accuracy, 'percent accuracy.')
 
                     """send a signal to the snack bar if the dog defecates on the pad"""
+                    Onpad = False
                     temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
                     dog_coordinate = dict(zip(temp_key, temp_value))
                     json_data = read_json(json_path)
                     pad_coordinate, feedback = json_data['pad'], json_data['feedback']
+
+                    if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
+                        continue
+                    else :
+                        # dog area
+                        dog_wid = dog_coordinate["rdx"] - dog_coordinate["lux"]
+                        dog_hei = dog_coordinate["rdy"] - dog_coordinate["luy"]
+                        dog_area = dog_wid * dog_hei
+
+                        # overlapped area
+                        lx = max(pad_coordinate["lux"], dog_coordinate["lux"])
+                        rx = min(pad_coordinate["rdx"], dog_coordinate["rdx"])
+                        dy = max(pad_coordinate["rdy"], dog_coordinate["rdy"])
+                        uy = min(pad_coordinate["luy"], dog_coordinate["luy"])
+
+                        co_wid = rx - lx
+                        co_hei = dy - uy
+                        co_area = co_wid * co_hei
+
+                        # Decide whether the dog is on the pad
+                        if (co_area / dog_area >= 0.4) :
+                            Onpad = True
+
+
                     # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
                     # if the dog defecates on the pad:
                     #     response, token = send_result(poopee, dog_image, pet_id, token, image_name)
