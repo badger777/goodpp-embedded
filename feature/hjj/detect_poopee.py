@@ -152,7 +152,14 @@ def main():
     engine_for_predict = ClassificationEngine(model_path_for_poopee)
 
     """load video"""
-    cap = cv2.VideoCapture(video_number)
+    #cap = cv2.VideoCapture(video_number)
+    fname = 'asdf.mp4'
+    cap = cv2.VideoCapture(fname)
+    fps = cap.get(5)
+    if (fps < 10) :
+        div = 1
+    else :
+        div = fps // 10
     # for checking the sequences
     queue = [2]*20
     p_flag = False
@@ -163,129 +170,135 @@ def main():
         if not ret:
             print('cannot read frame')
             break
-        img = frame[:, :, ::-1].copy() # BGR to RGB
-        img = Image.fromarray(img) # NumPy ndarray to PIL.Image
+        if (int(cap.get(1)) % div == 0):
+            img = frame[:, :, ::-1].copy() # BGR to RGB
+            img = Image.fromarray(img) # NumPy ndarray to PIL.Image
 
-        """draw the bounding box and label for the pad"""
-        # json_data = read_json(json_path)
-        # pad_coordinate = json_data['pad']
-        # annotate_pad(frame, pad_coordinate, pad_color)
+            """draw the bounding box and label for the pad"""
+            # json_data = read_json(json_path)
+            # pad_coordinate = json_data['pad']
+            # annotate_pad(frame, pad_coordinate, pad_color)
 
-        """detect object"""
-        candidates = engine_for_object.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
-        if candidates:
-            for obj in candidates:
-                """set color for drawing"""
-                if obj.label_id in box_colors:
-                    box_color = box_colors[obj.label_id] # the same color for the same object
-                else:
-                    box_color = [int(j) for j in np.random.randint(0,255, 3)] # random color for new object
-                    box_colors[obj.label_id] = box_color
-
-                coordinate = tuple(map(int, obj.bounding_box.ravel()))
-                accuracy = int(obj.score * 100) 
-                # label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
-                """draws the bounding box and label"""
-                # annotate_objects(frame, coordinate, label_text, box_color)
-
-                if obj.label_id == 17: # id 17 is dog
-                    """crop the image"""
-                    dog_image = crop_image(img, obj.bounding_box.ravel())
-                    """predict poopee"""
-                    classify = engine_for_predict.classify_with_image(dog_image, top_k=1)
-                    result = classify[0][0]
-                    accuracy = classify[0][1] * 100
-
-                    """
-                    predict poopee
-                    0 --> poo
-                    1 --> pee
-                    2 --> nothing
-                    """
-
-                    print("dog's coordinate is", coordinate, end=' ')
-                    if result == 0:
-                        print('and dog poop', end=' ')
-                    elif result == 1:
-                        print('and dog pees', end=' ')
+            """detect object"""
+            candidates = engine_for_object.detect_with_image(img, threshold=threshold, top_k=len(labels), keep_aspect_ratio=True, relative_coord=False, resample=0)
+            if candidates:
+                for obj in candidates:
+                    """set color for drawing"""
+                    if obj.label_id in box_colors:
+                        box_color = box_colors[obj.label_id] # the same color for the same object
                     else:
-                        print('and dog is nothing', end=' ')
-                    print('with', accuracy, 'percent accuracy.')
+                        box_color = [int(j) for j in np.random.randint(0,255, 3)] # random color for new object
+                        box_colors[obj.label_id] = box_color
 
-                    for r in range(1,10) :
-                        queue[r-1] = queue[r]
-                    queue[9] = result
+                    coordinate = tuple(map(int, obj.bounding_box.ravel()))
+                    accuracy = int(obj.score * 100) 
+                    label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
+                    """draws the bounding box and label"""
+                    annotate_objects(frame, coordinate, label_text, box_color)
 
-                    if ((result == 0 or 1) and isOnpad == False) :
-                        """send a signal to the snack bar if the dog defecates on the pad"""
-                        dog_to_send = dog_image
-                        temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
-                        dog_coordinate = dict(zip(temp_key, temp_value))
-                        json_data = read_json(json_path)
-                        pad_coordinate = json_data['pad']
+                    if obj.label_id == 17: # id 17 is dog
+                        """crop the image"""
+                        dog_image = crop_image(img, obj.bounding_box.ravel())
 
-                        if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
-                            continue
-                        else :
-                            # dog area
-                            dog_wid = dog_coordinate["rdx"] - dog_coordinate["lux"]
-                            dog_hei = dog_coordinate["rdy"] - dog_coordinate["luy"]
-                            dog_area = dog_wid * dog_hei
+                        """predict poopee"""
+                        classify = engine_for_predict.classify_with_image(dog_image, top_k=1)
+                        result = classify[0][0]
+                        accuracy = classify[0][1] * 100
 
-                            # overlapped area
-                            lx = max(pad_coordinate["lux"], dog_coordinate["lux"])
-                            rx = min(pad_coordinate["rdx"], dog_coordinate["rdx"])
-                            dy = max(pad_coordinate["rdy"], dog_coordinate["rdy"])
-                            uy = min(pad_coordinate["luy"], dog_coordinate["luy"])
+                        """
+                        predict poopee
+                        0 --> poo
+                        1 --> pee
+                        2 --> nothing
+                        """
 
-                            co_wid = rx - lx
-                            co_hei = dy - uy
-                            co_area = co_wid * co_hei
+                        print("dog's coordinate is", coordinate, end=' ')
+                        if result == 0:
+                            print('and dog poop', end=' ')
+                        elif result == 1:
+                            print('and dog pees', end=' ')
+                        else:
+                            print('and dog is nothing', end=' ')
+                        print('with', accuracy, 'percent accuracy.')
 
-                            # Decide whether the dog is on the pad
-                            if (co_area / dog_area >= 0.4) :
-                                isOnpad = True
+                        if ((result == 0 or 1) and isOnpad == False) :
+                            """send a signal to the snack bar if the dog defecates on the pad"""
+                            dog_to_send = img
+                            temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
+                            dog_coordinate = dict(zip(temp_key, temp_value))
+                            json_data = read_json(json_path)
+                            pad_coordinate = json_data['pad']
 
-                    
-                    # Sequential decision
-                    Q = np.array(queue)
-                    counte = collections.Counter(Q)
-                    Q_res = counte.most_common(n=1)[0][0]
-            
-                    if (Q_res == 0 or 1) :
-                        p_flag = True
-                    else : 
-                        if (p_flag == True) :
-                            # Success
-                            if (isOnpad == True) :
-                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'SUCCESS', image_name)
-                                json_data = read_json(json_path)
-                                feedback = json_data['feedback']
-                                rnd = np.random.randint(1,10)
-                                
-                                if (rnd <= feedback*10) :
-                                    send_feeding_signal(HOST, PORT)
-
-                            # defecates on wrong place
+                            if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
+                                isOnpad = False
                             else :
-                                # 배변 실패
-                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
-                            p_flag = False
-                            isOnpad = False
+                                # dog area
+                                dog_wid = dog_coordinate["rdx"] - dog_coordinate["lux"]
+                                dog_hei = dog_coordinate["rdy"] - dog_coordinate["luy"]
+                                dog_area = dog_wid * dog_hei
+
+                                # overlapped area
+                                lx = max(pad_coordinate["lux"], dog_coordinate["lux"])
+                                rx = min(pad_coordinate["rdx"], dog_coordinate["rdx"])
+                                dy = max(pad_coordinate["rdy"], dog_coordinate["rdy"])
+                                uy = min(pad_coordinate["luy"], dog_coordinate["luy"])
+
+                                co_wid = rx - lx
+                                co_hei = dy - uy
+                                co_area = co_wid * co_hei
+
+                                # Decide whether the dog is on the pad
+                                if (co_area / dog_area >= 0.4) :
+                                    isOnpad = True
+
+                        for r in range(1,20) :
+                            queue[r-1] = queue[r]
+                        queue[19] = result
+
+                        # Sequential decision
+                        Q = np.array(queue)
+                        counte = collections.Counter(Q)
+                        c_0 = counte[0]
+                        c_1 = counte[1]
+                        c_2 = counte[2]
+                        x = np.array([c_0, c_1, c_2])
+                        Q_res = x.argmax()
+                        print(counte)
+                        print(Q_res)
+                        if (Q_res == 0 or Q_res == 1) :
+                            p_flag = True
+                            print("poo&pee flag up")
                         else :
-                            continue
+                            if (p_flag == True) :
+                                # Success
+                                if (isOnpad == True) :
+                                    response, token = send_result(poopee, dog_to_send, pet_id, token, 'SUCCESS', image_name)
+                                    json_data = read_json(json_path)
+                                    feedback = json_data['feedback']
+                                    rnd = np.random.randint(1,10)
+                                    
+                                    # if (rnd <= feedback*10) :
+                                        # send_feeding_signal(HOST, PORT)
 
-        """calculating and drawing fps"""            
-        currTime = time.time()
-        fps = 1/ (currTime -  prevTime)
-        prevTime = currTime
-        print('fps is', fps)
-        # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
+                                # defecates on wrong place
+                                else :
+                                    # 배변 실패
+                                    response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
+                                p_flag = False
+                                isOnpad = False
+                                
 
-        """show video"""
-        # cv2.imshow('goodpp', frame)
-        # if cv2.waitKey(1)&0xFF == ord('q'):
-        #     break # press q to break
+            """calculating and drawing fps"""            
+            currTime = time.time()
+            fps = 1/ (currTime -  prevTime)
+            prevTime = currTime
+            # print('fps is', fps)
+            cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
+
+            """show video"""
+            cv2.imshow('goodpp', frame)
+            if cv2.waitKey(1)&0xFF == ord('q'):
+                break # press q to break
     
     """release video"""
     cap.release()
