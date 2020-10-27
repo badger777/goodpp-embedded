@@ -51,29 +51,26 @@ def read_json(file_path):
             print('Fail to read json file!')
 
 def main():
-    """for bluetooth"""
+    """set variables"""
     json_path = 'poopee_data.json'
     json_data = read_json(json_path)
-
-    t = threading.Thread(target=connect_bluetooth, args=(json_data['mac_address'], ))
+    mac_address, HOST, PORT = json_data['bluetooth']['mac_address'], json_data['bluetooth']['HOST'], json_data['bluetooth']['PORT']
+    
+    """for bluetooth"""
+    t = threading.Thread(target=connect_bluetooth, args=(mac_address, ))
     t.start() 
 
     """for socket communication"""
-    HOST = '127.0.0.1'
-    PORT = 9999
-
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind((HOST, PORT))
     server_socket.listen()
     print('Poopee snack bar server start!')
-
     while True:
         print('Waiting for socket communication...')
         client_socket, _ = server_socket.accept()
         t = threading.Thread(target=handle_client, args=(client_socket, ))
         t.start()
-
     server_socket.close()
 
 if __name__ == '__main__':
