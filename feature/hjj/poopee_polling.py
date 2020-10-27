@@ -1,4 +1,5 @@
 import json
+import socket
 from time import sleep
 from poopee_requests import Poopee
 
@@ -13,13 +14,29 @@ def write_json(file_path, json_data):
         json.dump(json_data, json_file, indent=4)
         print('Success to write a json file!')
 
+"""send a feeding signal via socket communication"""
+def send_feeding_signal(feeding, HOST, PORT):
+    _bool = True
+    while _bool:
+        try:
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.connect((HOST, PORT))
+            client_socket.send(feeding.encode('utf-8'))
+            client_socket.close()
+            _bool = False
+            print('Success to send a feeding signal!')
+        except:
+            print('Fail socket communication... retry...')
+            sleep(1)
+
 def main():
     """set json file path"""
     file_path = 'poopee_data.json'
 
-    """set variables to initialize class"""
+    """set variables"""
     json_data = read_json(file_path)
     serial_num, user_id, ip_addr, image_name = json_data['serial_num'], json_data['user_id'], json_data['ip_addr'], json_data['image_name']
+    HOST, PORT = json_data['bluetooth']['HOST'], json_data['bluetooth']['PORT']
 
     """load class"""
     poopee = Poopee(user_id, serial_num, ip_addr, image_name)
@@ -49,9 +66,8 @@ def main():
         if str(type(response)) == "<class 'dict'>": 
             """give snacks as much as requested by the user"""
             if 'feeding' in response:
-                for _ in range(response['feeding']):
-                    print('feeding') # 간식 주기
-                    sleep(1)
+                feeding = str(response['feeding'])
+                send_feeding_signal(feeding, HOST, PORT)
             """update pad data in json file"""
             if 'pad' in response:
                 json_data = read_json(file_path)
