@@ -219,10 +219,11 @@ def main():
 
                     if ((result == 0 or 1) and isOnpad == False) :
                         """send a signal to the snack bar if the dog defecates on the pad"""
+                        dog_to_send = dog_image
                         temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
                         dog_coordinate = dict(zip(temp_key, temp_value))
                         json_data = read_json(json_path)
-                        pad_coordinate, feedback = json_data['pad'], json_data['feedback']
+                        pad_coordinate = json_data['pad']
 
                         if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
                             continue
@@ -258,12 +259,18 @@ def main():
                         if (p_flag == True) :
                             # Success
                             if (isOnpad == True) :
-                                response, token = send_result(poopee, dog_image, pet_id, token, 'SUCCESS', image_name)
-                                send_feeding_signal(HOST, PORT)
+                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'SUCCESS', image_name)
+                                json_data = read_json(json_path)
+                                feedback = json_data['feedback']
+                                rnd = np.random.randint(1,10)
+                                
+                                if (rnd <= feedback*10) :
+                                    send_feeding_signal(HOST, PORT)
+
                             # defecates on wrong place
                             else :
                                 # 배변 실패
-                                response, token = send_result(poopee, dog_image, pet_id, token, 'FAIL', image_name)
+                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
                             p_flag = False
                             isOnpad = False
                         else :
