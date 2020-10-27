@@ -52,7 +52,7 @@ class Poopee:
     record the success of the dog's bowel movements
     POST at /{pet_id}/record
     """
-    def pet_record(self, pet_id, token):
+    def pet_record(self, pet_id, token, result):
         """modify URL"""
         temp_url = self._url + 'pet/' + str(pet_id) + '/record'
 
@@ -61,7 +61,7 @@ class Poopee:
         timestamp = now.strftime('%Y-%m-%d %H:%M:%S')
         temp_data = {
             'timestamp': timestamp,
-            'result': 'SUCCESS'
+            'result': result
         }
 
         """add access token at headers"""
