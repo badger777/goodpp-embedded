@@ -191,7 +191,6 @@ def main():
                 if obj.label_id == 17: # id 17 is dog
                     """crop the image"""
                     dog_image = crop_image(img, obj.bounding_box.ravel())
-
                     """predict poopee"""
                     classify = engine_for_predict.classify_with_image(dog_image, top_k=1)
                     result = classify[0][0]
@@ -219,6 +218,7 @@ def main():
 
                     if ((result == 0 or 1) and isOnpad == False) :
                         """send a signal to the snack bar if the dog defecates on the pad"""
+                        dog_to_send = dog_image
                         temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
                         dog_coordinate = dict(zip(temp_key, temp_value))
                         json_data = read_json(json_path)
@@ -254,11 +254,11 @@ def main():
             
                     if (Q_res == 0 or 1) :
                         p_flag = True
-                    else :
+                    else : 
                         if (p_flag == True) :
                             # Success
                             if (isOnpad == True) :
-                                response, token = send_result(poopee, dog_image, pet_id, token, 'SUCCESS', image_name)
+                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'SUCCESS', image_name)
                                 json_data = read_json(json_path)
                                 feedback = json_data['feedback']
                                 rnd = np.random.randint(1,10)
@@ -269,7 +269,7 @@ def main():
                             # defecates on wrong place
                             else :
                                 # 배변 실패
-                                response, token = send_result(poopee, dog_image, pet_id, token, 'FAIL', image_name)
+                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
                             p_flag = False
                             isOnpad = False
                         else :
