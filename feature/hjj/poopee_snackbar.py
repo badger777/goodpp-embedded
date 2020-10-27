@@ -14,7 +14,7 @@ def handle_client(client_socket):
             print('Waiting for a feeding signal...')
             data = client_socket.recv(4)
             data = data.decode('utf-8')
-            print('Received ' + data)
+            print('Received', data)
             for _ in range(int(data)):
                 FEEDING.append('on') # push on stack
     except:
@@ -29,13 +29,14 @@ def connect_bluetooth(mac_address):
             print('Bluetooth connected!')
             while True: # loop for feeding when bluetooth is connected
                 temp_len = len(FEEDING)
-                print('Number of remaining feeding: ' + temp_len)
+                print('Number of remaining feeding:', temp_len)
                 if temp_len > 0:
                     bluetooth_socket.send(FEEDING.pop()) # pop on stack
-                    sleep(3)
-                sleep(1)
-        except:
-            print("Bluetooth not connected... retry...")
+                    sleep(2)
+                else:
+                    sleep(1)
+        except Exception as e:
+            print('Bluetooth not connected... error is', e)
             sleep(1)
 
 """read a json file when 'poopee_polling.py' file does not write a json file"""
@@ -50,12 +51,12 @@ def read_json(file_path):
             print('Fail to read json file!')
 
 def main():
-    # """for bluetooth"""
-    # json_path = 'poopee_data.json'
-    # json_data = read_json(json_path)
+    """for bluetooth"""
+    json_path = 'poopee_data.json'
+    json_data = read_json(json_path)
 
-    # bt_thread = threading.Thread(target=connect_bluetooth, args=(json_data['mac_address'], ))
-    # bt_thread.start() 
+    t = threading.Thread(target=connect_bluetooth, args=(json_data['mac_address'], ))
+    t.start() 
 
     """for socket communication"""
     HOST = '127.0.0.1'
@@ -72,9 +73,8 @@ def main():
         client_socket, _ = server_socket.accept()
         t = threading.Thread(target=handle_client, args=(client_socket, ))
         t.start()
-    
+
     server_socket.close()
-                   
 
 if __name__ == '__main__':
     main()
