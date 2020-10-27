@@ -222,7 +222,7 @@ def main():
                         temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
                         dog_coordinate = dict(zip(temp_key, temp_value))
                         json_data = read_json(json_path)
-                        pad_coordinate, feedback = json_data['pad'], json_data['feedback']
+                        pad_coordinate = json_data['pad']
 
                         if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
                             continue
@@ -259,7 +259,13 @@ def main():
                             # Success
                             if (isOnpad == True) :
                                 response, token = send_result(poopee, dog_image, pet_id, token, 'SUCCESS', image_name)
-                                send_feeding_signal(HOST, PORT)
+                                json_data = read_json(json_path)
+                                feedback = json_data['feedback']
+                                rnd = np.random.randint(1,10)
+                                
+                                if (rnd <= feedback*10) :
+                                    send_feeding_signal(HOST, PORT)
+
                             # defecates on wrong place
                             else :
                                 # 배변 실패
