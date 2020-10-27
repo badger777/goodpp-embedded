@@ -191,7 +191,6 @@ def main():
                 if obj.label_id == 17: # id 17 is dog
                     """crop the image"""
                     dog_image = crop_image(img, obj.bounding_box.ravel())
-
                     """predict poopee"""
                     classify = engine_for_predict.classify_with_image(dog_image, top_k=1)
                     result = classify[0][0]
@@ -255,7 +254,7 @@ def main():
             
                     if (Q_res == 0 or 1) :
                         p_flag = True
-                    else :
+                    else : 
                         if (p_flag == True) :
                             # Success
                             if (isOnpad == True) :
