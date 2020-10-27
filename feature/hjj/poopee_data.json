@@ -13,5 +13,6 @@
         "rux": 0,
         "ruy": 0
     },
-    "feedback": 0.5
+    "feedback": 0.5,
+    "mac_address": ""
 }
