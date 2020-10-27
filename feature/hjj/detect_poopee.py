@@ -78,7 +78,7 @@ def read_json(file_path):
 def send_result(poopee, image, pet_id, token, result, image_name):
     image.save(image_name)
 
-    response = poopee.pet_record(pet_id, token)
+    response = poopee.pet_record(pet_id, token, result)
     """
     when the token expires(http 401), the token is reissued
     this code brings security issues, so we will need to fix the code later
@@ -282,7 +282,6 @@ def main():
 
                                 # defecates on wrong place
                                 else :
-                                    # 배변 실패
                                     response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
                                 p_flag = False
                                 isOnpad = False
