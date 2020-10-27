@@ -4,8 +4,8 @@ import time
 import json
 import socket
 import os
-from time import sleep
 import collections
+from time import sleep
 from poopee_requests import Poopee
 from PIL import Image
 from edgetpu.detection.engine import DetectionEngine
@@ -75,7 +75,7 @@ def read_json(file_path):
             print('Fail to read json file!')
 
 """record the success of the dog's bowel movements to server"""
-def send_result(poopee, image, pet_id, token, image_name):
+def send_result(poopee, image, pet_id, token, result, image_name):
     image.save(image_name)
 
     response = poopee.pet_record(pet_id, token)
@@ -86,7 +86,7 @@ def send_result(poopee, image, pet_id, token, image_name):
     if response == 401:
         response = poopee.ppcam_login()
         token = response['device_access_token']
-        response = poopee.pet_record(pet_id, token)
+        response = poopee.pet_record(pet_id, token, result)
 
     try:
         os.remove(image_name)
@@ -258,23 +258,16 @@ def main():
                         if (p_flag == True) :
                             # Success
                             if (isOnpad == True) :
-                                response, token = send_result(poopee, dog_image, pet_id, token, image_name)
-                                client_socket.send("on")
+                                response, token = send_result(poopee, dog_image, pet_id, token, 'SUCCESS', image_name)
+                                send_feeding_signal(HOST, PORT)
                             # defecates on wrong place
                             else :
                                 # 배변 실패
-                                response, token = send_result(poopee, dog_image, pet_id, token, image_name)
+                                response, token = send_result(poopee, dog_image, pet_id, token, 'FAIL', image_name)
                             p_flag = False
                             isOnpad = False
                         else :
                             continue
-
-
-                
-                    # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
-                    # if the dog defecates on the pad:
-                    #     response, token = send_result(poopee, dog_image, pet_id, token, image_name)
-                    #     send_feeding_signal(HOST, PORT)
 
         """calculating and drawing fps"""            
         currTime = time.time()
