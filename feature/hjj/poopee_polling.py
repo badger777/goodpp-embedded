@@ -16,12 +16,14 @@ def write_json(file_path, json_data):
 
 """send a feeding signal via socket communication"""
 def send_feeding_signal(feeding, HOST, PORT):
-    while True:
+    _bool = True
+    while _bool:
         try:
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client_socket.connect((HOST, PORT))
             client_socket.send(feeding.encode('utf-8'))
             client_socket.close()
+            _bool = False
             print('Success to send a feeding signal!')
         except:
             print('Fail socket communication... retry...')
