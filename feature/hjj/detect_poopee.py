@@ -3,6 +3,7 @@ import cv2
 import time
 import json
 import os
+import collections
 from poopee_requests import Poopee
 from PIL import Image
 from edgetpu.detection.engine import DetectionEngine
@@ -141,6 +142,11 @@ def main():
 
     """load video"""
     cap = cv2.VideoCapture(video_number)
+    # for checking the sequences
+    queue = [2]*20
+    p_flag = False
+    isOnpad = False
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -186,6 +192,7 @@ def main():
                     1 --> pee
                     2 --> nothing
                     """
+
                     print("dog's coordinate is", coordinate, end=' ')
                     if result == 0:
                         print('and dog poop', end=' ')
@@ -195,11 +202,64 @@ def main():
                         print('and dog is nothing', end=' ')
                     print('with', accuracy, 'percent accuracy.')
 
-                    """send a signal to the snack bar if the dog defecates on the pad"""
-                    temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
-                    dog_coordinate = dict(zip(temp_key, temp_value))
-                    json_data = read_json(json_path)
-                    pad_coordinate, feedback = json_data['pad'], json_data['feedback']
+                    for r in range(1,10) :
+                        queue[r-1] = queue[r]
+                    queue[9] = result
+
+                    if ((result == 0 or 1) and isOnpad == False) :
+                        """send a signal to the snack bar if the dog defecates on the pad"""
+                        temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
+                        dog_coordinate = dict(zip(temp_key, temp_value))
+                        json_data = read_json(json_path)
+                        pad_coordinate, feedback = json_data['pad'], json_data['feedback']
+
+                        if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
+                            continue
+                        else :
+                            # dog area
+                            dog_wid = dog_coordinate["rdx"] - dog_coordinate["lux"]
+                            dog_hei = dog_coordinate["rdy"] - dog_coordinate["luy"]
+                            dog_area = dog_wid * dog_hei
+
+                            # overlapped area
+                            lx = max(pad_coordinate["lux"], dog_coordinate["lux"])
+                            rx = min(pad_coordinate["rdx"], dog_coordinate["rdx"])
+                            dy = max(pad_coordinate["rdy"], dog_coordinate["rdy"])
+                            uy = min(pad_coordinate["luy"], dog_coordinate["luy"])
+
+                            co_wid = rx - lx
+                            co_hei = dy - uy
+                            co_area = co_wid * co_hei
+
+                            # Decide whether the dog is on the pad
+                            if (co_area / dog_area >= 0.4) :
+                                isOnpad = True
+
+                    
+                    # Sequential decision
+                    Q = np.array(queue)
+                    counte = collections.Counter(Q)
+                    Q_res = counte.most_common(n=1)[0][0]
+            
+                    if (Q_res == 0 or 1) :
+                        p_flag = True
+                    else :
+                        if (p_flag == True) :
+                            # Success
+                            if (isOnpad == True) :
+                                response, token = send_result(poopee, dog_image, pet_id, token, image_name)
+                                client_socket.send("on")
+                            # defecates on wrong place
+                            else :
+                                # 배변 실패
+                                response, token = send_result(poopee, dog_image, pet_id, token, image_name)
+                            p_flag = False
+                            isOnpad = False
+                        else :
+                            continue
+
+
+                
                     # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
                     # if the dog defecates on the pad:
                     #     response, token = send_result(poopee, dog_image, pet_id, token, image_name)
