@@ -13,5 +13,10 @@
         "rux": 0,
         "ruy": 0
     },
-    "feedback": 0.5
+    "feedback": 0.5,
+    "bluetooth": {
+        "HOST": "127.0.0.1",
+        "PORT": 9999,
+        "mac_address": ""
+    }
 }

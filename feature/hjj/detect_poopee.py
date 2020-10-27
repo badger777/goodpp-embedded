@@ -2,13 +2,14 @@ import numpy as np
 import cv2
 import time
 import json
+import socket
 import os
+from time import sleep
 import collections
 from poopee_requests import Poopee
 from PIL import Image
 from edgetpu.detection.engine import DetectionEngine
 from edgetpu.classification.engine import ClassificationEngine
-# from bluetooth import *
 
 """load labels"""
 def load_labels(path):
@@ -93,6 +94,21 @@ def send_result(poopee, image, pet_id, token, image_name):
         print('Failed to delete image!')
     return response, token
 
+"""send a feeding signal via socket communication"""
+def send_feeding_signal(HOST, PORT):
+    _bool = True
+    while _bool:
+        try:
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.connect((HOST, PORT))
+            client_socket.send('1'.encode('utf-8'))
+            client_socket.close()
+            _bool = False
+            print('Success to send a feeding signal!')
+        except:
+            print('Fail socket communication... retry...')
+            sleep(1)
+
 def main():
     """set variables"""
     video_number = 2
@@ -100,15 +116,15 @@ def main():
     model_path_for_object = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     model_path_for_poopee = 'poopee_edgetpu.tflite'
     threshold = 0.4
-    # mac_address = '' # initializing for bluetooth connection
     prevTime = 0 # initializing for calculating fps
     box_colors = {} # initializing for setting color
     pad_coordinate = {}
     json_path = 'poopee_data.json'
     
-    """set variables to initialize class"""
+    """set variables from json"""
     json_data = read_json(json_path)
     serial_num, user_id, ip_addr, image_name = json_data['serial_num'], json_data['user_id'], json_data['ip_addr'], json_data['image_name']
+    HOST, PORT = json_data['bluetooth']['HOST'], json_data['bluetooth']['PORT']
 
     """set variables to draw the bounding box and label for the pad"""
     # pad_color = [int(j) for j in np.random.randint(0,255, 3)] 
@@ -125,11 +141,6 @@ def main():
         # print(token, ppcam_id, pet_id)
     else:
         return response # if login fails, the program is terminate
-
-    """connect bluetooth"""
-    # client_socket = BluetoothSocket(RFCOMM)
-    # client_socket.connect((mac_address, 1))
-    # print("bluetooth connected!")
 
     """load labels for detect object"""
     labels = load_labels(label_path)
@@ -173,7 +184,7 @@ def main():
 
                 coordinate = tuple(map(int, obj.bounding_box.ravel()))
                 accuracy = int(obj.score * 100) 
-                label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
+                # label_text = labels[obj.label_id] + ' (' + str(accuracy) + '%)'
                 """draws the bounding box and label"""
                 # annotate_objects(frame, coordinate, label_text, box_color)
 
@@ -263,7 +274,7 @@ def main():
                     # compare the dog's coordinates with the set pad's coordinates & analyze the sequence
                     # if the dog defecates on the pad:
                     #     response, token = send_result(poopee, dog_image, pet_id, token, image_name)
-                    #     client_socket.send("on")
+                    #     send_feeding_signal(HOST, PORT)
 
         """calculating and drawing fps"""            
         currTime = time.time()
@@ -279,10 +290,6 @@ def main():
     
     """release video"""
     cap.release()
-
-    """disconnect bluetooth"""
-    # client_socket.close()
-    # print("bluetooth disconnected!")
 
 if __name__ == '__main__':
     main()
