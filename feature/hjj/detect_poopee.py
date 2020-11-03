@@ -289,10 +289,10 @@ def main():
             print('fps is', fps)
             # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
-            """show video"""
-            # cv2.imshow('goodpp', frame)
+            """show video"""            # cv2.imshow('goodpp', frame)
             # if cv2.waitKey(1)&0xFF == ord('q'):
             #     break # press q to break
+
     
     """release video"""
     cap.release()
