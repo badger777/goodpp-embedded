@@ -78,7 +78,7 @@ def read_json(file_path):
 def send_result(poopee, image, pet_id, token, result, image_name):
     image.save(image_name)
 
-    response = poopee.pet_record(pet_id, token)
+    response = poopee.pet_record(pet_id, token, result)
     """
     when the token expires(http 401), the token is reissued
     this code brings security issues, so we will need to fix the code later
@@ -153,8 +153,10 @@ def main():
 
     """load video"""
     cap = cv2.VideoCapture(video_number)
+    
     # for checking the sequences
-    queue = [2]*20
+    que_size = 20
+    queue = [2]*que_size
     p_flag = False
     isOnpad = False
 
@@ -163,6 +165,7 @@ def main():
         if not ret:
             print('cannot read frame')
             break
+        
         img = frame[:, :, ::-1].copy() # BGR to RGB
         img = Image.fromarray(img) # NumPy ndarray to PIL.Image
 
@@ -188,7 +191,7 @@ def main():
                 """draws the bounding box and label"""
                 # annotate_objects(frame, coordinate, label_text, box_color)
 
-                if obj.label_id == 17: # id 17 is dog
+                if obj.label_id == 17 or obj.label_id == 16 : # id 17 is dog & 16 is cat
                     """crop the image"""
                     dog_image = crop_image(img, obj.bounding_box.ravel())
 
@@ -213,10 +216,6 @@ def main():
                         print('and dog is nothing', end=' ')
                     print('with', accuracy, 'percent accuracy.')
 
-                    for r in range(1,10) :
-                        queue[r-1] = queue[r]
-                    queue[9] = result
-
                     if ((result == 0 or 1) and isOnpad == False) :
                         """send a signal to the snack bar if the dog defecates on the pad"""
                         dog_to_send = img
@@ -226,7 +225,7 @@ def main():
                         pad_coordinate = json_data['pad']
 
                         if ((pad_coordinate["rdx"] < dog_coordinate["lux"]) or (pad_coordinate["lux"] > dog_coordinate["rdx"]) or (pad_coordinate["luy"] > dog_coordinate["rdy"]) or (pad_coordinate["rdy"] < dog_coordinate["luy"])) :
-                            continue
+                            isOnpad = False
                         else :
                             # dog area
                             dog_wid = dog_coordinate["rdx"] - dog_coordinate["lux"]
@@ -247,14 +246,23 @@ def main():
                             if (co_area / dog_area >= 0.4) :
                                 isOnpad = True
 
-                    
+                    for r in range(1,que_size) :
+                        queue[r-1] = queue[r]
+                    queue[que_size-1] = result
+
                     # Sequential decision
                     Q = np.array(queue)
                     counte = collections.Counter(Q)
-                    Q_res = counte.most_common(n=1)[0][0]
-            
-                    if (Q_res == 0 or 1) :
+                    c_0 = counte[0]
+                    c_1 = counte[1]
+                    c_2 = counte[2]
+                    x = np.array([c_0, c_1, c_2])
+                    Q_res = x.argmax()
+                    print(counte)
+                    print(Q_res)
+                    if (Q_res == 0 or Q_res == 1) :
                         p_flag = True
+                        print("poo&pee flag up")
                     else :
                         if (p_flag == True) :
                             # Success
@@ -269,24 +277,22 @@ def main():
 
                             # defecates on wrong place
                             else :
-                                # 배변 실패
                                 response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
                             p_flag = False
                             isOnpad = False
-                        else :
-                            continue
+                                
 
-        """calculating and drawing fps"""            
-        currTime = time.time()
-        fps = 1/ (currTime -  prevTime)
-        prevTime = currTime
-        print('fps is', fps)
-        # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
+            """calculating and drawing fps"""            
+            currTime = time.time()
+            fps = 1/ (currTime -  prevTime)
+            prevTime = currTime
+            print('fps is', fps)
+            # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
-        """show video"""
-        # cv2.imshow('goodpp', frame)
-        # if cv2.waitKey(1)&0xFF == ord('q'):
-        #     break # press q to break
+            """show video"""
+            # cv2.imshow('goodpp', frame)
+            # if cv2.waitKey(1)&0xFF == ord('q'):
+            #     break # press q to break
     
     """release video"""
     cap.release()
