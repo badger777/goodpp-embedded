@@ -32,7 +32,7 @@ def connect_bluetooth(mac_address):
                 print('Number of remaining feeding:', temp_len)
                 if temp_len > 0:
                     bluetooth_socket.send(FEEDING.pop()) # pop on stack
-                    sleep(2)
+                    sleep(3)
                 else:
                     sleep(1)
         except Exception as e:

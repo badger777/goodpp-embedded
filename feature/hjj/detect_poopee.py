@@ -104,7 +104,7 @@ def send_feeding_signal(HOST, PORT):
             client_socket.send('1'.encode('utf-8'))
             client_socket.close()
             _bool = False
-            print('Success to send a feeding signal!')
+            # print('Success to send a feeding signal!')
         except:
             print('Fail socket communication... retry...')
             sleep(1)
@@ -281,17 +281,16 @@ def main():
                             p_flag = False
                             isOnpad = False
                                 
+        """calculating and drawing fps"""            
+        currTime = time.time()
+        fps = 1/ (currTime -  prevTime)
+        prevTime = currTime
+        print('fps is', fps)
+        # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
-            """calculating and drawing fps"""            
-            currTime = time.time()
-            fps = 1/ (currTime -  prevTime)
-            prevTime = currTime
-            print('fps is', fps)
-            # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
-
-            """show video"""            # cv2.imshow('goodpp', frame)
-            # if cv2.waitKey(1)&0xFF == ord('q'):
-            #     break # press q to break
+        """show video"""            # cv2.imshow('goodpp', frame)
+        # if cv2.waitKey(1)&0xFF == ord('q'):
+        #     break # press q to break
 
     
     """release video"""
