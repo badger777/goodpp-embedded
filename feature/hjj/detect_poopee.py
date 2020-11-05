@@ -218,7 +218,8 @@ def main():
 
                     if ((result == 0 or 1) and isOnpad == False) :
                         """send a signal to the snack bar if the dog defecates on the pad"""
-                        dog_to_send = img
+                        if (accuracy > 80) :
+                            dog_to_send = img
                         temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
                         dog_coordinate = dict(zip(temp_key, temp_value))
                         json_data = read_json(json_path)
