@@ -34,10 +34,10 @@ def connect_bluetooth(mac_address):
                     bluetooth_socket.send(FEEDING.pop()) # pop on stack
                     sleep(3)
                 else:
-                    sleep(10)
+                    sleep(1)
         except Exception as e:
             print('Bluetooth not connected... error is', e)
-            sleep(1)
+            sleep(10)
 
 """read a json file when 'poopee_polling.py' file does not write a json file"""
 def read_json(file_path):
