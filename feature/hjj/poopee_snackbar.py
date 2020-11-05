@@ -34,7 +34,7 @@ def connect_bluetooth(mac_address):
                     bluetooth_socket.send(FEEDING.pop()) # pop on stack
                     sleep(3)
                 else:
-                    sleep(1)
+                    sleep(10)
         except Exception as e:
             print('Bluetooth not connected... error is', e)
             sleep(1)
