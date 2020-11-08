@@ -218,7 +218,7 @@ def main():
 
                     if ((result == 0 or 1) and isOnpad == False) :
                         """send a signal to the snack bar if the dog defecates on the pad"""
-                        if (accuracy > 80) :
+                        if (accuracy > 70) :
                             dog_to_send = img
                         temp_key, temp_value = ('lux', 'luy', 'rdx', 'rdy'), coordinate
                         dog_coordinate = dict(zip(temp_key, temp_value))
@@ -268,17 +268,18 @@ def main():
                         if (p_flag == True) :
                             # Success
                             if (isOnpad == True) :
-                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'SUCCESS', image_name)
                                 json_data = read_json(json_path)
                                 feedback = json_data['feedback']
                                 rnd = np.random.randint(1,10)
-                                
                                 if (rnd <= feedback*10) :
                                     send_feeding_signal(HOST, PORT)
+                                response, token = send_result(poopee, dog_to_send, pet_id, token, 'SUCCESS', image_name)
+                                print('Send SUCCESS signal!')
 
                             # defecates on wrong place
                             else :
                                 response, token = send_result(poopee, dog_to_send, pet_id, token, 'FAIL', image_name)
+                                print('Send FAIL signal!')
                             p_flag = False
                             isOnpad = False
                                 
