@@ -115,7 +115,7 @@ def main():
     label_path = 'coco_labels.txt'
     model_path_for_object = 'mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite'
     model_path_for_poopee = 'poopee_edgetpu.tflite'
-    threshold = 0.4
+    threshold = 0.3
     prevTime = 0 # initializing for calculating fps
     box_colors = {} # initializing for setting color
     pad_coordinate = {}

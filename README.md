@@ -197,6 +197,30 @@ $ pip3 install opencv-contrib-python==4.1.0.25
 
 ### Installation
 
+1. Clone the repo
+
+```bash
+$ git clone https://git.swmgit.org/swmaestro/urillbwa-2.git
+```
+
+2. Install required model file
+
+```bash
+$ git clone https://github.com/tensorflow/examples --depth 1
+$ bash examples/lite/examples/object_detection/raspberry_pi/download.sh .
+$ mv coco_labels.txt mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite urillbwa-2/poopee_cam
+$ rm -rf examples detect.tflite
+```
+
+3. Run python file
+```bash
+$ cd urillbwa-2/poopee-cam
+$ python3 poopee_snackbar &
+$ python3 poopee_polling &
+$ python3 detect_poopee &
+```
+
+4. Upload an ino file to the Arduino
 
 
 <!-- CONTACT -->
