@@ -69,7 +69,7 @@ def read_json(file_path):
         try:
             with open(file_path, 'r') as json_file:
                 json_data = json.load(json_file)
-                print('Success to read a json file!')
+                # print('Success to read a json file!')
                 return json_data
         except:
             print('Fail to read json file!')
@@ -104,7 +104,7 @@ def send_feeding_signal(HOST, PORT):
             client_socket.send('1'.encode('utf-8'))
             client_socket.close()
             _bool = False
-            # print('Success to send a feeding signal!')
+            print('Success to send a feeding signal!')
         except:
             print('Fail socket communication... retry...')
             sleep(1)
@@ -207,14 +207,14 @@ def main():
                     2 --> nothing
                     """
 
-                    print("dog's coordinate is", coordinate, end=' ')
-                    if result == 0:
-                        print('and dog poop', end=' ')
-                    elif result == 1:
-                        print('and dog pees', end=' ')
-                    else:
-                        print('and dog is nothing', end=' ')
-                    print('with', accuracy, 'percent accuracy.')
+                    # print("dog's coordinate is", coordinate, end=' ')
+                    # if result == 0:
+                    #     print('and dog poop', end=' ')
+                    # elif result == 1:
+                    #     print('and dog pees', end=' ')
+                    # else:
+                    #     print('and dog is nothing', end=' ')
+                    # print('with', accuracy, 'percent accuracy.')
 
                     if ((result == 0 or 1) and isOnpad == False) :
                         """send a signal to the snack bar if the dog defecates on the pad"""
@@ -259,11 +259,11 @@ def main():
                     c_2 = counte[2]
                     x = np.array([c_0, c_1, c_2])
                     Q_res = x.argmax()
-                    print(counte)
-                    print(Q_res)
+                    # print(counte)
+                    # print(Q_res)
                     if (Q_res == 0 or Q_res == 1) :
                         p_flag = True
-                        print("poo&pee flag up")
+                        # print("poo&pee flag up")
                     else :
                         if (p_flag == True) :
                             # Success
@@ -287,7 +287,7 @@ def main():
         currTime = time.time()
         fps = 1/ (currTime -  prevTime)
         prevTime = currTime
-        print('fps is', fps)
+        # print('fps is', fps)
         # cv2.putText(frame, "fps:%.1f"%fps, (10,30), cv2.FONT_HERSHEY_PLAIN, 2, (0,255,0), 2)
 
         """show video"""
